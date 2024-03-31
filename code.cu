@@ -7,13 +7,13 @@
 #define MAX_LENGTH 10000
 #define REPEAT_TIMES 10
 #define MAX_KEY 10
-#define NUM_LETTERS 26 // Number of letters in the English alphabet
+#define NUM_LETTERS 26 
 
 
 
-__constant__ char d_inputString[MAX_LENGTH]; // For String Repeatation
-__device__ char d_key[10]; // Device-side encryption key
-__device__ char d_key_calculated[1024]; // Device-side decryption key
+__constant__ char d_inputString[MAX_LENGTH]; 
+__device__ char d_key[10]; 
+__device__ char d_key_calculated[1024]; 
 
 
 __device__ bool is_upper(char c) {
@@ -21,7 +21,6 @@ __device__ bool is_upper(char c) {
 }
 
 
-// Kernel to repeat the string REPEAT_TIMES
 __global__ void repeatString(char *output, int inputLength){
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int offset = idx * inputLength;
@@ -53,7 +52,6 @@ __global__ void crack_vigenere_kernel(const char* cipher, int cipher_len, int n,
             }
         }
         
-        // Find the most frequent character
         int max_freq = 0;
         char max_char = 0;
         for (int k = 0; k < NUM_LETTERS; k++) {
@@ -63,7 +61,6 @@ __global__ void crack_vigenere_kernel(const char* cipher, int cipher_len, int n,
             }
         }
         
-        // Assuming the most frequent character corresponds to 'E'
         keys[i] = ((max_char - 'E' + NUM_LETTERS) % NUM_LETTERS) + 'A';
     }
 }
@@ -102,19 +99,18 @@ char* only_alphabets(const char* text) {
 }
 
 char* process_string_CUDA(char* temp) {
-    // For Now Let us Onlu Consider Capital Letters 
     temp = only_alphabets(temp);
     char *d_output;
     int inputLength = strlen(temp);
 
-    size_t outputSize = MAX_LENGTH * REPEAT_TIMES; // To make the input String Longer
+    size_t outputSize = MAX_LENGTH * REPEAT_TIMES; 
     cudaMemcpyToSymbol(d_inputString, temp, inputLength + 1);
     cudaDeviceSynchronize(); 
 
     cudaMalloc(&d_output, outputSize);
     cudaMemset(d_output, 0, outputSize);
     repeatString<<<REPEAT_TIMES, 1>>>(d_output, inputLength); 
-    cudaDeviceSynchronize(); // Ensure kernel execution is completed
+    cudaDeviceSynchronize();
 
     char *plainTextInput = (char*) malloc(outputSize);
     cudaMemcpy(plainTextInput, d_output, outputSize, cudaMemcpyDeviceToHost);
@@ -155,7 +151,7 @@ char *cudaEncrypt(char *processedInput,char *key)
 }
 __global__ void calculate_matches(const char *cipher, int length, int *matches) {
     int shift = blockIdx.x * blockDim.x + threadIdx.x;
-    if (shift >= length) return; // Ensure we do not go out of bounds
+    if (shift >= length) return;
 
     int matchCount = 0;
     for (int i = 0; i < length; ++i) {
@@ -166,7 +162,6 @@ __global__ void calculate_matches(const char *cipher, int length, int *matches) 
     matches[shift] = matchCount;
 }
 
-// Functions for mean, mode, variance 
 double mean(const int arr[], int size) {
     double sum = 0;
     for (int i = 0; i < size; i++) {
@@ -230,7 +225,6 @@ int guess_key_length_cuda(const char *cipher) {
         }
     }
 
-    // Calculate differences between peaks
     int* peak_diff = (int*)malloc((peaks_count - 1) * sizeof(int));
     for (int i = 0; i < peaks_count - 1; i++) {
         peak_diff[i] = peaks[i + 1] - peaks[i];
