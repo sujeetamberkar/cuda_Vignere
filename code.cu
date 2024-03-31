@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #define MAX_LENGTH 10000
 #define REPEAT_TIMES 10
 #define MAX_KEY 10
@@ -152,6 +153,18 @@ char *cudaEncrypt(char *processedInput,char *key)
     return encrypted;
 
 }
+__global__ void calculate_matches(const char *cipher, int length, int *matches) {
+    int shift = blockIdx.x * blockDim.x + threadIdx.x;
+    if (shift >= length) return; // Ensure we do not go out of bounds
+
+    int matchCount = 0;
+    for (int i = 0; i < length; ++i) {
+        if (cipher[i] == cipher[(i - shift + length) % length]) {
+            ++matchCount;
+        }
+    }
+    matches[shift] = matchCount;
+}
 
 // Functions for mean, mode, variance 
 double mean(const int arr[], int size) {
@@ -185,30 +198,34 @@ int mode(const int arr[], int size) {
     return maxValue;
 }
 
-// Function to guess the key length of a Vigenère cipher
-int guess_key_length(const char* cipher) {
+int guess_key_length_cuda(const char *cipher) {
     int length = strlen(cipher);
-    int* res = (int*)malloc(length * sizeof(int));
+    char *d_cipher;
+    int *d_matches, *matches;
 
-    // Count matching characters for each possible shift
-    for (int shift = 0; shift < length; shift++) {
-        int matches = 0;
-        for (int i = 0; i < length; i++) {
-            if (cipher[i] == cipher[(i - shift + length) % length]) {
-                matches++;
-            }
-        }
-        res[shift] = matches;
-    }
+    cudaMalloc((void **)&d_cipher, length);
+    cudaMalloc((void **)&d_matches, length * sizeof(int));
 
-    double dat_means = mean(res + 1, length - 1);
-    double dat_std_dev = sqrt(variance(res + 1, length - 1, dat_means));
+    cudaMemcpy(d_cipher, cipher, length, cudaMemcpyHostToDevice);
 
-    // Find peaks
+    int threadsPerBlock = 256;
+    int blocks = (length + threadsPerBlock - 1) / threadsPerBlock;
+
+    calculate_matches<<<blocks, threadsPerBlock>>>(d_cipher, length, d_matches);
+
+    matches = (int *)malloc(length * sizeof(int));
+    cudaMemcpy(matches, d_matches, length * sizeof(int), cudaMemcpyDeviceToHost);
+
+
+
+
+     double dat_means = mean(matches + 1, length - 1);
+    double dat_std_dev = sqrt(variance(matches + 1, length - 1, dat_means));
+
     int* peaks = (int*)malloc(length * sizeof(int));
     int peaks_count = 0;
     for (int i = 0; i < length; i++) {
-        if (res[i] >= dat_std_dev + dat_means) {
+        if (matches[i] >= dat_std_dev + dat_means) {
             peaks[peaks_count++] = i;
         }
     }
@@ -221,7 +238,11 @@ int guess_key_length(const char* cipher) {
 
     int key_length = mode(peak_diff, peaks_count - 1);
 
-    free(res);
+
+
+    cudaFree(d_cipher);
+    cudaFree(d_matches);
+    free(matches); 
     free(peaks);
     free(peak_diff);
 
@@ -285,15 +306,24 @@ char* cudaDecrypt(char *encrypted, char *key) {
 
 int main ()
 {
+    clock_t start = clock();
+
+
     char inputString[MAX_LENGTH]="Standard deviation is calculated as the square root of the variance Alternatively it is calculated by finding the mean of a data set finding the difference of each data point to the mean, squaring the differences adding them together dividing by the number of points in the data set less and finding the square root. Standard deviation is important because it can help users assess risk Consider an investment option with an average annual return of 10 per year However this average was derived from the past three year returns of many values By calculating the standard deviation and understanding your low likelihood of actually averaging 10 in any single given year your better armed to make informed decisions and recognizing underlying risk";
-    char key[MAX_KEY]="KEYS";
+    char key[MAX_KEY]="SUJ";
     char * processedInput = process_string_CUDA(inputString);
     char * encrypted = cudaEncrypt(processedInput,key);
-    int n = guess_key_length(encrypted);
+    int n = guess_key_length_cuda(encrypted);
     char* key_calculated = crack_vigenere_cuda(encrypted,n);
 
     char *calculatedPlainText=cudaDecrypt(encrypted,key_calculated);
-    printf("%s",calculatedPlainText);
+    printf("%s",key_calculated);
+    clock_t end = clock();
+
+    // Calculate the time spent
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("Time spent: %f seconds\n", time_spent);
+
 
 return 0;
 }

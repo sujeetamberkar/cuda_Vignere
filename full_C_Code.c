@@ -1,8 +1,9 @@
 #include <stdio.h>
-#import<string.h>
+#include<string.h>
 #include <stdlib.h>
 #include <ctype.h> // For isalpha()
 #include <math.h>
+#include <time.h>
 
 #define NUM_LETTERS 26 // Number of letters in the English alphabet
 
@@ -223,9 +224,9 @@ char* crack_vigenere(const char* cipher) {
 
 
 int main() {
+    clock_t start = clock();
 
-    // char* message = "Standard deviation is calculated as the square root of the variance. Alternatively, it is calculated by finding the mean of a data set, finding the difference of each data point to the mean, squaring the differences, adding them together, dividing by the number of points in the data set less 1, and finding the square root. Standard deviation is important because it can help users assess risk. Consider an investment option with an average annual return of 10 per year. However, this average was derived from the past three year returns of 50, -15, and -5. By calculating the standard deviation and understanding your low likelihood of actually averaging 10 in any single given year, you're better armed to make informed decisions and recognizing underlying risk";
-    char* message = "ab";
+    char* message = "Standard deviation is calculated as the square root of the variance. Alternatively, it is calculated by finding the mean of a data set, finding the difference of each data point to the mean, squaring the differences, adding them together, dividing by the number of points in the data set less 1, and finding the square root. Standard deviation is important because it can help users assess risk. Consider an investment option with an average annual return of 10 per year. However, this average was derived from the past three year returns of 50, -15, and -5. By calculating the standard deviation and understanding your low likelihood of actually averaging 10 in any single given year, you're better armed to make informed decisions and recognizing underlying risk";
 
     // Replicate message 10 tismes
     size_t messageLen = strlen(message);
@@ -233,29 +234,35 @@ int main() {
     for (int i = 0; i < 10; i++) {
         strcat(repeatedMessage, message);
     }
-    printf("%s",repeatedMessage);
 
-    // // Filter to only alphabets and convert to uppercase
-    // char* filteredMessage = only_alphabets(repeatedMessage);
-    // for (int i = 0; filteredMessage[i]; i++) {
-    //     filteredMessage[i] = toupper(filteredMessage[i]);
-    // }
+    char* filteredMessage = only_alphabets(repeatedMessage);
+    for (int i = 0; filteredMessage[i]; i++) {
+        filteredMessage[i] = toupper(filteredMessage[i]);
+    }
 
-    // const char* key = "ABC";
-    // char* encrypted = (char*)malloc(strlen(filteredMessage) + 1); // Allocate memory for the encrypted message
+    const char* key = "SUJ";
+    char* encrypted = (char*)malloc(strlen(filteredMessage) + 1); // Allocate memory for the encrypted message
 
-    // vignere_encrypt(filteredMessage, key, encrypted);
-    // // printf("%s\n", encrypted);
+    vignere_encrypt(filteredMessage, key, encrypted);
+    // printf("%s\n", encrypted);
 
-    // char* guessedKey = crack_vigenere(encrypted);
-    // printf("%s\n", guessedKey);
+    char* guessedKey = crack_vigenere(encrypted);
+    printf("%s\n", guessedKey);
     // printf("The cracked key is %s\n", guessedKey);
 
-    // // Free allocated memory
-    // free(repeatedMessage); // Free memory of the repeated message
-    // free(filteredMessage);
-    // free(encrypted);
-    // free(guessedKey);
+    // Free allocated memory
+    free(repeatedMessage); // Free memory of the repeated message
+    free(filteredMessage);
+    free(encrypted);
+    free(guessedKey);
+    clock_t end = clock();
 
-    // return 0;
+    // Calculate the time spent
+    double time_spent = (double)(end - start) / CLOCKS_PER_SEC;
+
+    // Print the time spent in seconds
+    printf("Time spent: %f seconds\n", time_spent);
+
+    return 0;
+    return 0;
 }
