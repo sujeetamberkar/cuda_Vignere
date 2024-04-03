@@ -281,7 +281,6 @@ char* cudaDecrypt(char *encrypted, char *key) {
 
     int blockSize = 256;
     int numBlocks = (msgLen + blockSize - 1) / blockSize;
-
     vignere_decrypt_cuda<<<numBlocks, blockSize>>>(d_encrypted, d_decrypted, msgLen, keyLen);
 
     cudaDeviceSynchronize();
