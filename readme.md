@@ -8,6 +8,11 @@ This project contains two implementations of the Vigenère cipher encryption and
 - **GCC Compiler**: For compiling the C code.
 - **NVIDIA CUDA Toolkit**: For compiling and running the CUDA code. Ensure that your system has an NVIDIA GPU that is compatible with the CUDA version installed.
 
+## Setup Instructions
+    - 1 Clone the repository:
+    ```
+    git clone https://github.com/sujeetamberkar/cuda_Vignere
+    ```
 ## File Structure
 ```
     - code.cu          # Main CUDA program file
